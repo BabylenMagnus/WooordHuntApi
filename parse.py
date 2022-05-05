@@ -3,12 +3,20 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def parse_word(word):
-    URL = "https://wooordhunt.ru/word/" + word
+BASE_URL = "https://wooordhunt.ru/"
+
+
+def parse_word(word: str):
+    URL = BASE_URL + "word/" + word
     page = requests.get(URL)
     soup = BeautifulSoup(page.content, "html.parser")
-
-    request_dict = {"main translate": soup.find(class_="t_inline_en").text}
+    try:
+        request_dict = {"main translate": soup.find(class_="t_inline_en").text}
+    except:
+        if soup.title.text == "Упссс...":
+            return parse_word(soup.find(id='word_not_found').a['href'].split('/')[1])
+        else:
+            return parse_word(soup.find(id='word_forms').a['href'].split('/')[1])
 
     p = re.compile(r'<i>.*?</i>')
 
