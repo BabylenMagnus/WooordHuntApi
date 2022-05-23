@@ -1,22 +1,29 @@
 import re
 import requests
 from bs4 import BeautifulSoup
+import functools
 
 
 BASE_URL = "https://wooordhunt.ru/"
 
 
+@functools.lru_cache(maxsize=500)
 def parse_word(word: str):
     URL = BASE_URL + "word/" + word
     page = requests.get(URL)
     soup = BeautifulSoup(page.content, "html.parser")
-    try:
-        request_dict = {"main translate": soup.find(class_="t_inline_en").text}
-    except:
-        if soup.title.text == "Упссс...":
-            return parse_word(soup.find(id='word_not_found').a['href'].split('/')[1])
-        else:
-            return parse_word(soup.find(id='word_forms').a['href'].split('/')[1])
+    request_dict = {}
+
+    if soup.find(class_="t_inline_en"):
+        request_dict["main translate"] = soup.find(class_="t_inline_en").text
+    elif soup.find(class_='possible_variant'):
+        return parse_word(
+            soup.find(class_='possible_variant')['href'].split('/')[-1]
+        )
+    elif soup.find(id='word_forms'):
+        return parse_word(
+            soup.find(id='word_forms').a['href'].split('/')[-1]
+        )
 
     p = re.compile(r'<i>.*?</i>')
 
@@ -34,4 +41,5 @@ def parse_word(word: str):
                     out_tr.append(i)
 
         request_dict[part_of_speech] = ", ".join(out_tr)
-    return request_dict
+
+    return word, request_dict
