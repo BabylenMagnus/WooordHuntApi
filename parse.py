@@ -7,21 +7,38 @@ import functools
 BASE_URL = "https://wooordhunt.ru/"
 
 
-@functools.lru_cache(maxsize=500)
-def parse_word(word: str):
+def _parse(word: str):
     URL = BASE_URL + "word/" + word
     page = requests.get(URL)
     soup = BeautifulSoup(page.content, "html.parser")
+
+    return soup
+
+
+@functools.lru_cache(maxsize=500)
+def translate_word(word: str):
+    """
+    Возвращает 3 варианта перевода, или None если не удалось найти перевод
+    """
+    soup = _parse(word)
+
+    if soup.find(class_="t_inline_en"):
+        return ", ".join(soup.find(class_="t_inline_en").text.split(", ")[:3])
+
+
+@functools.lru_cache(maxsize=500)
+def full_translate(word: str):
+    soup = _parse(word)
     request_dict = {}
 
     if soup.find(class_="t_inline_en"):
         request_dict["main translate"] = soup.find(class_="t_inline_en").text
     elif soup.find(class_='possible_variant'):
-        return parse_word(
+        return full_translate(
             soup.find(class_='possible_variant')['href'].split('/')[-1]
         )
     elif soup.find(id='word_forms'):
-        return parse_word(
+        return full_translate(
             soup.find(id='word_forms').a['href'].split('/')[-1]
         )
 
@@ -43,3 +60,4 @@ def parse_word(word: str):
         request_dict[part_of_speech] = ", ".join(out_tr)
 
     return word, request_dict
+я

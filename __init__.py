@@ -1,1 +1,1 @@
-from .parse import parse_word
+from .parse import translate_word, full_translate
