@@ -60,4 +60,3 @@ def full_translate(word: str):
         request_dict[part_of_speech] = ", ".join(out_tr)
 
     return word, request_dict
-я
